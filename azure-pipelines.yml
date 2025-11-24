@@ -113,6 +113,7 @@ stages:
         FodConnection: 'FoD_Full_Demo'
         ReleaseOptions: '0'          
         ReleaseId: 1671608
+        AssessmentTypeId: 16713145
         EntitlementFrequencyType: 'Subscription'
         EntitlementId: '11948'
         OverrideScanSettings: '2'
