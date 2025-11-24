@@ -40,4 +40,44 @@ stages:
       env:
         DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
 
+- stage: SAST_FoD
+  displayName: 'Stage SAST – Fortify on Demand'
+  dependsOn: SCA_Debricked
+  condition: succeeded()          # solo corre si SCA pasó
+  jobs:
+  - job: SAST_Job
+    displayName: 'FoD SAST – Static Assessment'
+    pool:
+      name: Default
+      demands:
+        - agent.name -equals DESKTOP-V47TP49
+
+    steps:
+    - checkout: self
+
+    # Aquí lanzamos el Static Assessment de FoD sobre el código del repo
+    - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
+      displayName: 'Fortify on Demand Static Assessment – SAST'
+      inputs:
+        # Ruta del código fuente en el agente
+        FortifyProjects: '$(Build.SourcesDirectory)'
+
+        # Nombre del Service Connection que ya creaste
+        FodConnection: 'FoD_Full_Demo'
+
+        # Usar Release Id existente (tu ID 1671608)
+        ReleaseOptions: 0          # 0 = Release Id
+        ReleaseId: '1671608'
+
+        # Uso típico de entitlement (ajusta si en tu tenant usas otro modelo)
+        EntitlementSelection: 1    # 1 = Subscription
+        EntitlementPreference: 1   # 1 = Single Scan
+
+        # Usar la configuración de scan definida en el portal FoD
+        OverrideScanSettings: 2    # 2 = Use FoD settings
+
+        # Gate de seguridad: si viola la política, falla el task (y el stage)
+        PolicyFailAction: 1        # 1 = Fail the build on policy fail
+
+
 
