@@ -91,3 +91,7 @@ stages:
 
         # Tipo de build: para Juice Shop mejor deja "other"
         BuildType: 'other'
+        # >>> NUEVO: acción frente a fallo de política <<<
+        # 0 = NO falla el build si la política se marca FAIL (solo reporta)
+        # 1 = Falla el build cuando la política se marca FAIL (security gate real)
+        PolicyFailAction: '0'
