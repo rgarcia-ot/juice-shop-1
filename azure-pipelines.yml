@@ -99,11 +99,10 @@ stages:
   jobs:
   - job: DAST_Job
     displayName: 'FoD DAST – Automated Dynamic Assessment'
-
     pool:
       name: Default
       demands:
-        - agent.name -equals DESKTOP-V47TP49   # tu agente
+        - agent.name -equals DESKTOP-V47TP49
 
     steps:
     - checkout: self
@@ -111,12 +110,10 @@ stages:
     - task: FortifyDASTAutomated@2
       displayName: 'Fortify on Demand – DAST Automated'
       inputs:
-      
-        FodConnection: 'FoD_Full_Demo'    # AJUSTA SI NECESARIO
-        ReleaseOptions: '0'               # 0 = ReleaseId
+        FodConnection: 'FoD_Full_Demo'
+        ReleaseOptions: '0'          
         ReleaseId: 1671608
-        AssessmentTypeId: 16713145
-        EntitlementId: 11948
         EntitlementFrequencyType: 'Subscription'
-        OverrideScanSettings: '2'         # 2 = Use Settings from FoD
-        PolicyFailAction: '1'
+        EntitlementId: '11948'
+        OverrideScanSettings: '2'
+        PolicyFailAction: '0'
