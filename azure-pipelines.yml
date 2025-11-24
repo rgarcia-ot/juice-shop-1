@@ -4,7 +4,7 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+- master  
 
 stages:
 - stage: SCA_Debricked
@@ -20,21 +20,17 @@ stages:
     steps:
     - checkout: self
 
-    # --- Node para instalar dependencias de JS ---
+    # Si quieres, sigues instalando Node por consistencia, pero ya no es obligatorio
     - task: NodeTool@0
-      displayName: 'Instalar Node 18.x'
+      displayName: 'Instalar Node 20.x'
       inputs:
-        versionSpec: '18.x'
+        versionSpec: '20.x'
 
-    - script: |
-        echo "Instalando dependencias del proyecto..."
-        npm install
-      displayName: 'npm install'
+    # OJO: ya NO hacemos npm install
 
-    # --- SCA Debricked usando tu ejecutable local ---
     - powershell: |
-        Write-Host "Iniciando análisis SCA con Debricked CLI..."
-        $exe = "C:\Tools\Debricked\debricked.exe"       # <-- cambia si está en otra ruta
+        Write-Host "Iniciando análisis SCA con Debricked..."
+        $exe = "C:\Debricked\debricked.exe"   # ajusta a la ruta real donde lo tengas
         & $exe scan -t "$(DEBRICKED_TOKEN)"
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Debricked detectó violaciones de política"
@@ -43,4 +39,5 @@ stages:
       displayName: "Debricked SCA – ejecutar CLI local"
       env:
         DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
+
 
