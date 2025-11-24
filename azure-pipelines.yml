@@ -49,49 +49,38 @@ stages:
   dependsOn: SCA_Debricked
   condition: always()
   jobs:
-  - job: SAST_Job
-    displayName: 'FoD SAST – Static Assessment'
+  - job: Job
     pool:
       name: Default
       demands:
         - agent.name -equals DESKTOP-V47TP49
-
     steps:
-    - checkout: self
+      # Descarga el código del repo
+      - checkout: self
 
-    # Aquí lanzamos el Static Assessment de FoD sobre el código del repo
-    - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
-      displayName: 'Fortify on Demand Static Assessment – SAST'
-      inputs:
-        # Código a subir: siempre ruta local, NO URL de GitHub
-        FortifyProjects: '$(Build.SourcesDirectory)'
+      # Compilar Sample.java con soporte a preview features
+      - script: |
+          mkdir -p out
+          javac --enable-preview --release 17 -d out Sample.java
+        displayName: "Compilar Sample.java"
 
-        # Ruta local de ScanCentral en tu agente (como ya pusiste)
-        ScanCentralLocation: 'C:\agent\ScanCentral\bin'
+      # (Opcional) Ejecutar la clase compilada para validar
+      - script: |
+          java --enable-preview -cp out Sample
+        displayName: "Ejecutar Sample.java"
 
-        # Service connection FoD
-        FodConnection: 'FoD_Full_Demo'
-
-        # Usar ReleaseId existente
-        ReleaseOptions: '0'          # 0 = Release Id
-        ReleaseId: '1671608'
-
-        # Uso de entitlement
-        EntitlementSelection: '1'    # 1 = Subscription
-        EntitlementPreference: '1'   # 1 = Single Scan
-
-        # Usar configuración de scan desde el portal FoD
-        OverrideScanSettings: '2'    # 2 = Use FoD settings
-
-        # Si ya hay un scan en progreso
-        InProgressScanActionType: '2'    # 2 = Queue (por ejemplo)
-
-        # >>> ESTA LINEA ES LA QUE FALTABA <<<
-        RemediationScanPreference: '0'   # 0 = No remediation scan / normal scan
-
-        # Tipo de build: para Juice Shop mejor deja "other"
-        BuildType: 'other'
-        # >>> NUEVO: acción frente a fallo de política <<<
-        # 0 = NO falla el build si la política se marca FAIL (solo reporta)
-        # 1 = Falla el build cuando la política se marca FAIL (security gate real)
-        PolicyFailAction: '0'
+      # Escaneo con Fortify on Demand
+      - task: FortifyOnDemandStatic@9
+        inputs:
+          FortifyProjects: ''
+          FodConnection: 'FoD-Java'
+          ReleaseOptions: '0'
+          ReleaseId: 1671608
+          EntitlementSelection: '1'
+          EntitlementPreference: '2'
+          OverrideScanSettings: '2'
+          InProgressScanActionType: '2'
+          RemediationScanPreference: '0'
+          BuildType: 'none'        
+          BuildCommand: 'javac --enable-preview --release 17 Sample.java'
+          PolicyFailAction: '0'
