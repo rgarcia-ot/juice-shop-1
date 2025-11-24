@@ -3,25 +3,17 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+# Dispara el pipeline en cada push a master (ajusta si usas otra rama)
 trigger:
 - master
 
-pool:
-  vmImage: 'windows-latest'
-
+# Variables (las de FoD las dejamos para después)
 variables:
-  # Service connection de Fortify on Demand
+  # Nombre del service connection de FoD (lo usaremos más adelante)
   FOD_CONNECTION: 'FoD_Full_Demo'
 
-  # IDs de release en FoD (ajústalos a tu tenant)
-  FOD_SCA_RELEASE_ID: '1671608'      # por ahora puedes usar el que ya tienes
-  FOD_SAST_RELEASE_ID: '1671608'     # o crear releases separados después
-  FOD_DAST_RELEASE_ID: '1671608'
-
-  # Ruta donde vamos a empaquetar el código
-  FORTIFY_ARCHIVE_DIR: '$(Build.ArtifactStagingDirectory)/zipped'
-  FORTIFY_ARCHIVE_NAME: '$(Build.BuildId).zip'
-
+# A partir de aquí definimos stages (OJO: 'stages:' va a nivel raíz)
+stages:
 # =========================================================
 # STAGE 1: SCA con Debricked (Core SCA)
 # =========================================================
@@ -42,12 +34,13 @@ variables:
         versionSpec: '18.x'
 
     - script: |
+        echo "Instalando dependencias del proyecto..."
         npm install
-      displayName: 'Instalar dependencias del proyecto'
+      displayName: 'npm install'
 
-    # Aquí se ejecuta el análisis SCA de Debricked: ESTE ES EL MOMENTO CLAVE
+    # Aquí es donde REALMENTE se ejecuta el análisis SCA de Debricked
     - script: |
-        echo "Ejecutando Debricked Core SCA..."
+        echo "Ejecutando análisis SCA con Debricked CLI..."
         docker run --rm \
           -v $(System.DefaultWorkingDirectory):/src \
           -w /src \
@@ -56,63 +49,5 @@ variables:
           debricked scan -t $(DEBRICKED_TOKEN)
       displayName: 'Debricked SCA – debricked scan'
       env:
+        # Variable secreta definida en Azure DevOps (Library / Variables del pipeline)
         DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
-
-
-
-
-
-
-
-# =========================================================
-# STAGE 3: SAST (FoD Static Assessment con release SAST)
-# =========================================================
-- stage: SAST
-  displayName: 'Stage SAST (FoD)'
-  dependsOn: SCA
-  condition: succeeded()   # Si falla SCA (por policy), aquí ya no entra
-  jobs:
-  - job: SAST_Job
-    displayName: 'FoD SAST - Código fuente'
-    steps:
-    - download: current
-      artifact: 'fortify-archive'
-      displayName: 'Descargar artefacto fortify-archive'
-
-    # Igual que arriba: agrega el task "Fortify on Demand Static Assessment",
-    # pero apuntando al release SAST. Algo como:
-    #
-    # - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
-    #   displayName: 'Fortify on Demand Static Assessment (SAST)'
-    #   inputs:
-    #     SourceCodeLocation: '$(Pipeline.Workspace)/fortify-archive/$(FORTIFY_ARCHIVE_NAME)'
-    #     FortifyConnection: '$(FOD_CONNECTION)'
-    #     ReleaseId: '$(FOD_SAST_RELEASE_ID)'
-    #     # En el UI:
-    #     #   - Configura el perfil SAST correspondiente
-    #     #   - Action if failing policy: Fail task
-
-# =========================================================
-# STAGE 4: DAST (FoD DAST Automated)
-# =========================================================
-- stage: DAST
-  displayName: 'Stage DAST (FoD DAST Automated)'
-  dependsOn: SAST
-  condition: succeeded()   # Si falla SAST, aquí se detiene
-  jobs:
-  - job: DAST_Job
-    displayName: 'FoD DAST Automated - Juice Shop'
-    steps:
-    # Aquí agregas el task "FoD DAST Automated" desde el editor:
-    #
-    # - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fod-dast-automated.FodDastAutomated@2
-    #   displayName: 'FoD DAST Automated'
-    #   inputs:
-    #     FortifyConnection: '$(FOD_CONNECTION)'
-    #     ReleaseId: '$(FOD_DAST_RELEASE_ID)'
-    #     # En el UI:
-    #     #   - Ya debes tener el Dynamic setup configurado en FoD para este release
-    #     #   - Action if failing policy: Fail task
-    #
-    # El propio task envía la solicitud de escaneo DAST, espera el resultado
-    # según el polling configurado y marca éxito/fracaso.
