@@ -112,7 +112,7 @@ stages:
       displayName: 'Fortify on Demand – DAST Automated'
       inputs:
         # 👉 Service Connection creado en Azure DevOps (tú pusiste ejemplo: FoD-Java)
-        FodConnection: 'FoD-Full_Demo'    # AJUSTA SI NECESARIO
+        FodConnection: 'FoD_Full_Demo'    # AJUSTA SI NECESARIO
         
         # 👉 Usar Release existente (el mismo que usas para SAST)
         ReleaseOptions: '0'               # 0 = ReleaseId
