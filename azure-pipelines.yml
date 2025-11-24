@@ -1,0 +1,146 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  # Service connection de Fortify on Demand
+  FOD_CONNECTION: 'FoD_Full_Demo'
+
+  # IDs de release en FoD (ajústalos a tu tenant)
+  FOD_SCA_RELEASE_ID: '1671608'      # por ahora puedes usar el que ya tienes
+  FOD_SAST_RELEASE_ID: '1671608'     # o crear releases separados después
+  FOD_DAST_RELEASE_ID: '1671608'
+
+  # Ruta donde vamos a empaquetar el código
+  FORTIFY_ARCHIVE_DIR: '$(Build.ArtifactStagingDirectory)/zipped'
+  FORTIFY_ARCHIVE_NAME: '$(Build.BuildId).zip'
+
+# =========================================================
+# STAGE 1: BUILD & EMPAQUETADO
+# =========================================================
+stages:
+- stage: Build
+  displayName: 'Build & empaquetar aplicación'
+  jobs:
+  - job: Build_Job
+    displayName: 'Build Node / Juice Shop'
+    steps:
+    - checkout: self
+
+    - task: NodeTool@0
+      displayName: 'Instalar Node 18.x'
+      inputs:
+        versionSpec: '18.x'
+
+    - script: |
+        npm install
+        npm run build || echo "No build script, sólo npm install" 
+      displayName: 'Instalar dependencias y compilar (si aplica)'
+
+    # Empaquetar el código fuente para FoD
+    - powershell: |
+        New-Item -ItemType Directory -Force -Path "$(FORTIFY_ARCHIVE_DIR)" | Out-Null
+        $src = "$(Build.SourcesDirectory)"
+        $zip = "$(FORTIFY_ARCHIVE_DIR)/$(Build.BuildId).zip"
+        if (Test-Path $zip) { Remove-Item $zip -Force }
+        Compress-Archive -Path "$src\*" -DestinationPath $zip
+      displayName: 'Empaquetar código para Fortify (ZIP)'
+
+    - publish: '$(FORTIFY_ARCHIVE_DIR)'
+      artifact: 'fortify-archive'
+      displayName: 'Publicar artefacto para Fortify'
+
+# =========================================================
+# STAGE 2: SCA (FoD Static Assessment con release SCA)
+# =========================================================
+- stage: SCA
+  displayName: 'Stage SCA (FoD)'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: SCA_Job
+    displayName: 'FoD SCA - Open Source / Dependencias'
+    steps:
+    - download: current
+      artifact: 'fortify-archive'
+      displayName: 'Descargar artefacto fortify-archive'
+
+    # --- Aquí agregas el task "Fortify on Demand Static Assessment" desde el UI ---
+    # 1. En Azure DevOps, edita el pipeline en modo visual.
+    # 2. Agrega el task "Fortify on Demand Static Assessment".
+    # 3. Copia el YAML que te genere y pégalo aquí reemplazando este bloque.
+    #
+    # El YAML se ve, en términos generales, parecido a esto (EJEMPLO, AJÚSTALO
+    # con lo que te dé Azure):
+    #
+    # - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
+    #   displayName: 'Fortify on Demand Static Assessment (SCA)'
+    #   inputs:
+    #     SourceCodeLocation: '$(Pipeline.Workspace)/fortify-archive/$(FORTIFY_ARCHIVE_NAME)'
+    #     FortifyConnection: '$(FOD_CONNECTION)'
+    #     ReleaseId: '$(FOD_SCA_RELEASE_ID)'
+    #     # En el UI marca:
+    #     #   - Incluir Open Source / SCA
+    #     #   - Action if failing policy: Fail task
+    #
+    # Mientras tanto, deja este comentario como recordatorio.
+
+# =========================================================
+# STAGE 3: SAST (FoD Static Assessment con release SAST)
+# =========================================================
+- stage: SAST
+  displayName: 'Stage SAST (FoD)'
+  dependsOn: SCA
+  condition: succeeded()   # Si falla SCA (por policy), aquí ya no entra
+  jobs:
+  - job: SAST_Job
+    displayName: 'FoD SAST - Código fuente'
+    steps:
+    - download: current
+      artifact: 'fortify-archive'
+      displayName: 'Descargar artefacto fortify-archive'
+
+    # Igual que arriba: agrega el task "Fortify on Demand Static Assessment",
+    # pero apuntando al release SAST. Algo como:
+    #
+    # - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
+    #   displayName: 'Fortify on Demand Static Assessment (SAST)'
+    #   inputs:
+    #     SourceCodeLocation: '$(Pipeline.Workspace)/fortify-archive/$(FORTIFY_ARCHIVE_NAME)'
+    #     FortifyConnection: '$(FOD_CONNECTION)'
+    #     ReleaseId: '$(FOD_SAST_RELEASE_ID)'
+    #     # En el UI:
+    #     #   - Configura el perfil SAST correspondiente
+    #     #   - Action if failing policy: Fail task
+
+# =========================================================
+# STAGE 4: DAST (FoD DAST Automated)
+# =========================================================
+- stage: DAST
+  displayName: 'Stage DAST (FoD DAST Automated)'
+  dependsOn: SAST
+  condition: succeeded()   # Si falla SAST, aquí se detiene
+  jobs:
+  - job: DAST_Job
+    displayName: 'FoD DAST Automated - Juice Shop'
+    steps:
+    # Aquí agregas el task "FoD DAST Automated" desde el editor:
+    #
+    # - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fod-dast-automated.FodDastAutomated@2
+    #   displayName: 'FoD DAST Automated'
+    #   inputs:
+    #     FortifyConnection: '$(FOD_CONNECTION)'
+    #     ReleaseId: '$(FOD_DAST_RELEASE_ID)'
+    #     # En el UI:
+    #     #   - Ya debes tener el Dynamic setup configurado en FoD para este release
+    #     #   - Action if failing policy: Fail task
+    #
+    # El propio task envía la solicitud de escaneo DAST, espera el resultado
+    # según el polling configurado y marca éxito/fracaso.
