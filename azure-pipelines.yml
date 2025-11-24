@@ -6,9 +6,6 @@
 trigger:
 - master
 
-variables:
-  DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
-
 stages:
 - stage: SCA_Debricked
   displayName: 'Stage SCA – Core SCA (Debricked)'
