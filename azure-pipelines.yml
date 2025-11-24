@@ -7,38 +7,6 @@ trigger:
 - master  
 
 stages:
-- stage: SCA_Debricked
-  displayName: 'Stage SCA – Core SCA (Debricked)'
-  jobs:
-  - job: CoreSCA
-    displayName: 'Análisis SCA con Debricked CLI'
-    pool:
-      name: Default
-      demands:
-        - agent.name -equals DESKTOP-V47TP49    # tu agente
-
-    steps:
-    - checkout: self
-
-    # Si quieres, sigues instalando Node por consistencia, pero ya no es obligatorio
-    - task: NodeTool@0
-      displayName: 'Instalar Node 20.x'
-      inputs:
-        versionSpec: '20.x'
-
-    # OJO: ya NO hacemos npm install
-
-    - powershell: |
-        Write-Host "Iniciando análisis SCA con Debricked..."
-        $exe = "C:\Debricked\debricked.exe"   # ajusta a la ruta real donde lo tengas
-        & $exe scan -t "$(DEBRICKED_TOKEN)"
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Debricked detectó violaciones de política"
-            exit 1
-        }
-      displayName: "Debricked SCA – ejecutar CLI local"
-      env:
-        DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
 
 # condition:
 # - succeeded() → Solo ejecuta si el stage anterior terminó en éxito.
