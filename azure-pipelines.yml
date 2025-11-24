@@ -40,10 +40,14 @@ stages:
       env:
         DEBRICKED_TOKEN: $(DEBRICKED_TOKEN)
 
+# condition:
+# - succeeded() → Solo ejecuta si el stage anterior terminó en éxito.
+# - succeededOrFailed() → Ejecuta si el anterior fue éxito o fallo (solo no corre si fue cancelado).
+# - always() → Ejecuta SIEMPRE, sin importar el resultado de los stages previos.
 - stage: SAST_FoD
   displayName: 'Stage SAST – Fortify on Demand'
   dependsOn: SCA_Debricked
-  condition: succeeded()          # solo corre si SCA pasó
+  condition: always()
   jobs:
   - job: SAST_Job
     displayName: 'FoD SAST – Static Assessment'
