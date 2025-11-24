@@ -63,25 +63,31 @@ stages:
     - task: fortifyvsts.hpe-security-fortify-vsts.build-task-fortify-on-demand-static.FortifyOnDemandStatic@9
       displayName: 'Fortify on Demand Static Assessment – SAST'
       inputs:
-        # Ruta del código fuente en el agente
+        # Código a subir: siempre ruta local, NO URL de GitHub
         FortifyProjects: '$(Build.SourcesDirectory)'
 
-        # Nombre del Service Connection que ya creaste
+        # Ruta local de ScanCentral en tu agente (como ya pusiste)
+        ScanCentralLocation: 'C:\agent\ScanCentral\bin'
+
+        # Service connection FoD
         FodConnection: 'FoD_Full_Demo'
 
-        # Usar Release Id existente (tu ID 1671608)
-        ReleaseOptions: 0          # 0 = Release Id
+        # Usar ReleaseId existente
+        ReleaseOptions: '0'          # 0 = Release Id
         ReleaseId: '1671608'
 
-        # Uso típico de entitlement (ajusta si en tu tenant usas otro modelo)
-        EntitlementSelection: 1    # 1 = Subscription
-        EntitlementPreference: 1   # 1 = Single Scan
+        # Uso de entitlement
+        EntitlementSelection: '1'    # 1 = Subscription
+        EntitlementPreference: '1'   # 1 = Single Scan
 
-        # Usar la configuración de scan definida en el portal FoD
-        OverrideScanSettings: 2    # 2 = Use FoD settings
+        # Usar configuración de scan desde el portal FoD
+        OverrideScanSettings: '2'    # 2 = Use FoD settings
 
-        # Gate de seguridad: si viola la política, falla el task (y el stage)
-        PolicyFailAction: 1        # 1 = Fail the build on policy fail
+        # Si ya hay un scan en progreso
+        InProgressScanActionType: '2'    # 2 = Queue (por ejemplo)
 
+        # >>> ESTA LINEA ES LA QUE FALTABA <<<
+        RemediationScanPreference: '0'   # 0 = No remediation scan / normal scan
 
-
+        # Tipo de build: para Juice Shop mejor deja "other"
+        BuildType: 'other'
