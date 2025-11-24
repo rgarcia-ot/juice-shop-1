@@ -111,19 +111,12 @@ stages:
     - task: FortifyDASTAutomated@2
       displayName: 'Fortify on Demand – DAST Automated'
       inputs:
-        # 👉 Service Connection creado en Azure DevOps (tú pusiste ejemplo: FoD-Java)
+      
         FodConnection: 'FoD_Full_Demo'    # AJUSTA SI NECESARIO
-        
-        # 👉 Usar Release existente (el mismo que usas para SAST)
         ReleaseOptions: '0'               # 0 = ReleaseId
         ReleaseId: 1671608
-
-        # 👉 Tipo de entitlement (generalmente Subscription)
-        EntitlementFrequencyType: 'Subscription'
-
-        # 👉 Usar configuración de scan definida en FoD Portal
-        OverrideScanSettings: '2'         # 2 = Use Settings from FoD
-
-        # 👉 Gate de política (cambia a '0' si quieres pruebas sin bloquear)
-        PolicyFailAction: '1'
         AssessmentTypeId: 16713145
+        EntitlementId: 11948
+        EntitlementFrequencyType: 'Subscription'
+        OverrideScanSettings: '2'         # 2 = Use Settings from FoD
+        PolicyFailAction: '1'
