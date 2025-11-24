@@ -73,7 +73,7 @@ stages:
       - task: FortifyOnDemandStatic@9
         inputs:
           FortifyProjects: ''
-          FodConnection: 'FoD-Java'
+          FodConnection: 'FoD_Full_Demo'
           ReleaseOptions: '0'
           ReleaseId: 1671608
           EntitlementSelection: '1'
