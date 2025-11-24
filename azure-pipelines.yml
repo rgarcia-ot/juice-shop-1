@@ -126,3 +126,4 @@ stages:
 
         # 👉 Gate de política (cambia a '0' si quieres pruebas sin bloquear)
         PolicyFailAction: '1'
+        AssessmentTypeId: 16713145
